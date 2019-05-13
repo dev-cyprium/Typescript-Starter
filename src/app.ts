@@ -1,23 +1,39 @@
-import { Button } from './components/button';
-import { Heading, HType } from './components/heading';
-import { Paragraph } from './components/paragraph';
-import { VNode } from './components/vnode';
+import { createComponent, Component, VNode, creator } from './components/component';
+import { isString } from './utils/helpers';
 
 class Appliaction {
-  private root: VNode;
+  constructor(private opts: {render: (h: creator) => VNode}) {}
 
-  constructor(private id: string) {
-    this.root = new VNode();
+  attach(id: string) {
+    const vDom = this.opts.render(createComponent);
+    const $dom = this.render(vDom);
 
-    this.root.add(new Heading(HType.h2, 'Hello, world!'));
-    this.root.add(new Paragraph('By Oki!'));
+    const node = document.getElementById(id);
+    if (node) {
+      node.replaceWith($dom);
+    }
   }
 
-  start() {
-    const html = this.root.render();
-    document.getElementById(this.id).innerHTML = html;
+  render(vRoot: VNode | string) {
+    if (isString(vRoot)) {
+      return document.createTextNode(vRoot);
+    }
+    const $el = document.createElement(vRoot.tagName);
+
+    for (const child of vRoot.children) {
+      const node = this.render(child);
+      $el.appendChild(node);
+    }
+
+    return $el;
   }
 }
 
-const app = new Appliaction('app');
-app.start();
+const app = new Appliaction({
+  render: h => (
+    h('div', {}, [
+      h('h1', {}, ['Hello, world']),
+    ])
+  ),
+});
+app.attach('app');
